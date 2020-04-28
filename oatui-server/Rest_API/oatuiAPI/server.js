@@ -1,8 +1,8 @@
 var https = require("https");
 var fs = require("fs");
 var options = {  
-    key: fs.readFileSync('../sso/vlgspe7471.key'),  
-    cert: fs.readFileSync('../sso/vlgspe7471.crt')  
+    key: fs.readFileSync('<server key>'),  
+    cert: fs.readFileSync('<server certificate>')  
 }; 
 var app = require("./app");
  

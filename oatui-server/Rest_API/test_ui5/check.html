@@ -5,17 +5,16 @@
 <script>
 	$(document).ready(function(){
 		
-    var url1 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances";
-  	var url2 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances/6b92bf52-5311-11ea-a9fd-42010aeec524";
-   	// var url3 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances/061b5326-5304-11ea-9680-42010aeec524";
-    var username = "flowable"; var password = "flowable";
+    var url1 = "<runtime process instance url>";
+  	var url2 = "<runtime process instances with id url>";
+    var username = "<username>"; var password = "<password>";
     // var data1={"processDefinitionKey":"A_CHECK_USER_EXISTS"};
     /*var data1={"processDefinitionKey":"A_CHECK_USER_EXISTS",
                 "returnVariables":true,
                 "variables": [
     {
         "name":"ECS_KEY",
-        "value":"005056A508801ED9B8EC4AEE3BD717AD",
+        "value":"<ECS_KEY value>",
         "type":"string"
       }
    ]
@@ -27,7 +26,7 @@
 				"id": "ECS_KEY",
 				"name": "ECS_KEY",
 				"type":"string",
-				"value": "005056A508801ED9B8EC4AEE3BD717AD"
+				"value": "<ECS_KEY value>"
 			}
 		]};
 
@@ -56,7 +55,7 @@
        });
         /*DELETE*/
 	$("#delete").click(function(){
-	var url2 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances/" + id1;
+	var url2 = "<runtime task url>" + id1;
     $.ajax({
             url: url2,
             crossDomain: true,
@@ -76,7 +75,7 @@
         
         /*PUT*/
         $("#put").click(function(){
-        var url3 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances/" + id1;
+        var url3 = "<runtime url>" + id1;
     $.ajax({
             url: url3,
             crossDomain: true,
@@ -93,9 +92,9 @@
            });
        });
 
-	var url4 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/form/form-data";
+	var url4 = "<form data url>";
 	var data4={
-	  "taskId" : "d3a2043a-67a0-11ea-8c7d-42010aeec524",
+	  "taskId" : "<unique task id>",
 	  "properties" : [
 		{
 		"id": "manual_action",

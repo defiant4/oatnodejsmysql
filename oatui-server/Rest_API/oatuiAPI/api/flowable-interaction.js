@@ -36,8 +36,8 @@ routerFlowable.get("/get/buildJsonStatus/:buildId", async (req, res, next) => {
 		let sid = req.params.SID;
 		let busKey = sid+"_" + ecsKey;
 		var ret = {};
-		var flow_username = "flowable";  var flow_password = "flowable";
-		var proStartURL = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances/";
+		var flow_username = "<runtime>";  var flow_password = "<password>";
+		var proStartURL = "<runtime url>";
 		var startPostData ={ "processDefinitionKey":procDefKey,
 				"businessKey": busKey,
 				"startFormVariables":[	
@@ -67,8 +67,8 @@ routerFlowable.get("/get/buildJsonStatus/:buildId", async (req, res, next) => {
 
 		let proInstanceId = req.params.procInstanceId;
 		var ret = {};
-		var flow_username = "flowable";  var flow_password = "flowable";
-		var proDeleteURL = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances/" + proInstanceId;
+		var flow_username = "<username>";  var flow_password = "<password>";
+		var proDeleteURL = "<runtime url>" + proInstanceId;
 
 		// Axios delete call
 		return axios.delete(proDeleteURL,{ auth: {username: flow_username , password: flow_password}})
@@ -87,8 +87,8 @@ routerFlowable.get("/get/buildJsonStatus/:buildId", async (req, res, next) => {
 		// suspend a process
 		let proInstanceId = req.params.procInstanceId;
 		var ret = {};
-		var flow_username = "flowable";  var flow_password = "flowable";
-		var proSuspendURL = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances/" + proInstanceId;
+		var flow_username = "<username>";  var flow_password = "<password>";
+		var proSuspendURL = "<runtime process url>" + proInstanceId;
 		var taskPutData = {"action":"suspend"};
 		// Axios put call
 		return axios.put(proSuspendURL,taskPutData, { auth: {username: flow_username , password: flow_password}})
@@ -107,8 +107,8 @@ routerFlowable.get("/get/buildJsonStatus/:buildId", async (req, res, next) => {
 		// resume a suspended process
 		let proInstanceId = req.params.procInstanceId;
 		var ret = {};
-		var flow_username = "flowable";  var flow_password = "flowable";
-		var proActivateURL = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances/" + proInstanceId;
+		var flow_username = "<username>";  var flow_password = "<password>";
+		var proActivateURL = "<runtime url>" + proInstanceId;
 		var taskPutData = {"action":"activate"};
 		// Axios put call
 		return axios.put(proSuspendURL,taskPutData, { auth: {username: flow_username , password: flow_password}})
@@ -133,16 +133,16 @@ routerFlowable.get("/get/buildJsonStatus/:buildId", async (req, res, next) => {
 		if (taskOption == undefined || !possibleOptions.includes(taskOption))
 			taskOption = "0"; // initialize if not sent
 		var ret = {};
-		var flow_username = "flowable";  var flow_password = "flowable";
-		var runtimeTaskURL = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/tasks?processInstanceId=" + proInstanceId;
+		var flow_username = "<username>";  var flow_password = "<password>";
+		var runtimeTaskURL = "<runtime task url>" + proInstanceId;
 		// first call C step instance and get Task id 
 		return axios.get(runtimeTaskURL,{ auth: {username: flow_username , password: flow_password} 
 		})
 		.then(function(response){
 			ret=response.data.data[0];
 			let taskInstanceId = ret.id; // id should be the task id
-			let taskPostURL = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/form/form-data";
-			var flow_username1 = "flowable";  var flow_password1 = "flowable";
+			let taskPostURL = "<task url>";
+			var flow_username1 = "<username>";  var flow_password1 = "<password>";
 			var taskPostData = {
 					"taskId" : taskInstanceId,
 					"properties" : [
@@ -182,8 +182,8 @@ routerFlowable.get("/get/buildJsonStatus/:buildId", async (req, res, next) => {
 	routerFlowable.get("/fetchStartFormParams/:procDefinitionId", (req, res, next) => {
 		let processDefinitionId = req.params.procDefinitionId;
 		var ret = {};
-		var flow_username = "flowable";  var flow_password = "flowable";
-		var proStartFormURL = "https://dlmoattst.wdf.sap.corp/flowable-rest/service/repository/process-definitions/"+processDefinitionId+"/start-form";
+		var flow_username = "<username>";  var flow_password = "<password>";
+		var proStartFormURL = "<repository process definition url>"+processDefinitionId+"/start-form";
 		
 		return axios.get(proStartFormURL,{ auth: {username: flow_username , password: flow_password}})
 		.then(function (response) {

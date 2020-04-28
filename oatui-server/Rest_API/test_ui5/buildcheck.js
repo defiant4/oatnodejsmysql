@@ -6,7 +6,7 @@ class BuildStatusJson
 	{
 	this.webParamWInstanceId=webParamWInstanceId;this.phaseName1="";
 	 this.WJSON={};this.check=false;this.P_id="";this.ret=[];this.Pret=[];this.CArray1 = []; this.PJSON1=[];
-        this.oatHost = "https://dlmoattst.wdf.sap.corp";  // for test server
+        this.oatHost = "<server host url>";  // for test server
          this.criticalRunStati = ["Stopped_with_error","Stopped_manual_intervention"];
           this.P_anyCritError = false;
 	this.S_anyCritError = false;
@@ -112,7 +112,7 @@ class BuildStatusJson
 		// A generic method to GET call for Flowable historic APIs
 		//var self = this;
 		var ret = {};
-		var flow_username = "flowable";  var flow_password = "flowable";
+		var flow_username = "<username>";  var flow_password = "<password>";
 		axios.get(url,{ auth: {username: flow_username , password: flow_password}
 		})
 		.then(function(response){

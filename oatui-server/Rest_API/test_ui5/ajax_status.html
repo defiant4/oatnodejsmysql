@@ -3,7 +3,7 @@
 <head>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script>
-    var url1 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances?processDefinitionKey=W_API_TEST_INSTALLATION";
+    var url1 = "<runtime url with WID>";
     var username = "flowable";
     var password = "flowable";
     var statusJSON=[];
@@ -164,7 +164,7 @@
         function ajaxcall(id,successCallback){
             var username = "flowable";
             var password = "flowable";
-            var url = "https://dlmoattst.wdf.sap.corp/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+id;
+            var url = "<superprocessinstanceid url>"+id;
             $.ajax({
                      url: url,
             crossDomain: true,

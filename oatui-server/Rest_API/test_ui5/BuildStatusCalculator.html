@@ -22,8 +22,7 @@
 	
  	// global parameters here
    	var WJSON={};
-    var oatHost = "https://dlmoattst.wdf.sap.corp";  // for test server
-  	//var oatHost = "https://dlmoattprd.wdf.sap.corp";  // for production server
+    var oatHost = "<server host url>";  // for test server
   	var criticalRunStati = ["Stopped_with_error","Stopped_manual_intervention"];
   	var P_anyCritError = false,S_anyCritError = false,A_anyCritError=false;
   	
@@ -244,7 +243,7 @@
 		// A generic method to GET call for Flowable historic APIs
 		var self = this;
 		var ret = {};
-		var flow_username = "flowable";  var flow_password = "flowable";
+		var flow_username = "<username>";  var flow_password = "<password>";
 		jQuery.ajaxSetup({async: false}); // making synchronous
 		jQuery.ajax({
 	          	type:'GET',
