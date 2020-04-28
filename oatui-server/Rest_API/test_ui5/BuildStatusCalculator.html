@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+	<script type="text/javascript">
+   
+	$(document).ready(function() {  // document ready function
+		
+	var webParamWInstanceId = getParameterByName('wpid'); // main flow .. read the input parameter
+	//alert("wpid:" + webParamWInstanceId);
+ 	function getParameterByName(name, url) {
+   		// standard method to fetch URL params by name -- from stackoverflow !!
+   	    if (!url) 
+   	    	url = window.location.href; // get current URL
+   	    name = name.replace(/[\[\]]/g, "\\$&");
+   	    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+   	        results = regex.exec(url);
+   	    if (!results) return null;
+   	    if (!results[2]) return '';
+   	    return decodeURIComponent(results[2].replace(/\+/g, " "));
+   	}
+	
+ 	// global parameters here
+   	var WJSON={};
+    var oatHost = "https://dlmoattst.wdf.sap.corp";  // for test server
+  	//var oatHost = "https://dlmoattprd.wdf.sap.corp";  // for production server
+  	var criticalRunStati = ["Stopped_with_error","Stopped_manual_intervention"];
+  	var P_anyCritError = false,S_anyCritError = false,A_anyCritError=false;
+  	
+   	W_processTree(webParamWInstanceId); // for input W* parent id
+   	var jsonWebOut = JSON.stringify(WJSON);
+   	document.getElementById('jsonContent').innerHTML = jsonWebOut;  // render raw JSON on HTML output
+    
+   	// call in loop for 3 W* cases
+	function W_processTree(pid)  // would be called for Installation, Configuration & Quality individually
+	{
+    	// pid is the super parent ID -- W* instance ID
+		var url = oatHost + "/flowable-rest/service/history/historic-process-instances?processInstanceId=" + pid;
+		var data = queryFlowableInstance(url);
+        if (data["Result_API"] == "Success")
+        {
+        	// processDefinitionName   //processDefinitionDescription  //processDefinitionId
+        	var phaseName = "" + data.data[0].processDefinitionDescription;
+        	var pDefName =  ""+data.data[0].processDefinitionName; var dRson = ""+data.data[0].deleteReason;
+    		var beginTime = ""+data.data[0].startTime;  var endTime = ""+data.data[0].endTime;
+    		var rStatus = computeRunStatus(dRson,endTime,pDefName);
+
+    		WJSON[phaseName]={};
+			WJSON[phaseName]["Phase_Data"]={"name":phaseName, "FlowableDefinitionName" : data.data[0].processDefinitionName, 
+					"FlowableInstanceId" : data.data[0].id,"processDefinitionId" : data.data[0].processDefinitionId, "Run Status" : rStatus};
+			A_processTree(pid,phaseName); // linear call
+        }
+	}
+	function A_processTree(pid,phaseName)
+    {
+        // https://dlmoattst.wdf.sap.corp/flowable-rest/service/history/historic-process-instances?superProcessInstanceId=be66bf6c-62c7-11ea-843a-42010aeec524&sort=startTime&order=desc&size=1000
+        // think about startTime & endTime and mark as 'Completed' if applicable -- check for 'deleteReason'
+		var url = oatHost + "/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+pid + "&sort=startTime&order=asc&size=500";
+       	var data = queryFlowableInstance(url);
+      	if (data["Result_API"] == "Success")
+       	{
+      		var AJSON_Arr = [];
+   			WJSON[phaseName]["Sub_Phase_Data"]=AJSON_Arr; // attaching sub-phases array here
+   			//alert ("AJSON array:" + JSON.stringify(AJSON_Arr));
+   			
+   			for (var j=0; j<data.total; j++) {
+  				var AJSON = {};
+          		var aName = "" + data.data[0].processDefinitionDescription;  // only hard coded here ???
+          		var pDefName =  ""+data.data[j].processDefinitionName; var dRson = ""+data.data[j].deleteReason;
+        		var beginTime = ""+data.data[j].startTime;  var endTime = ""+data.data[j].endTime;
+        		var rStatus = computeRunStatus(dRson,endTime,pDefName);
+        		
+        		AJSON = {"name": aName, "FlowableDefinitionName" : "" + data.data[j].processDefinitionName,
+					"FlowableInstanceId" : data.data[j].id, "processDefinitionId" : data.data[j].processDefinitionId, "Run Status" : rStatus };
+        		A_anyCritError = false;
+        		AJSON["hierarchyData"] = S_processTree(data.data[j].id); // call returns an array
+        		if (A_anyCritError) {
+  					AJSON["Run Status"] = "Running_with_error";
+  					AJSON_Arr.push({"name": aName, "FlowableDefinitionName" : "" + data.data[j].processDefinitionName,
+  						"FlowableInstanceId" : data.data[j].id, "processDefinitionId" : data.data[j].processDefinitionId, "Run Status" : "Running_with_error" });
+  				} else {
+        			AJSON_Arr.push({"name": aName, "FlowableDefinitionName" : "" + data.data[j].processDefinitionName,
+					"FlowableInstanceId" : data.data[j].id, "processDefinitionId" : data.data[j].processDefinitionId, "Run Status" : rStatus });
+  				}
+        		
+          		WJSON[phaseName][aName] = AJSON;
+   			}
+		}
+	}
+	function checkIfPExists(pid)
+    {
+		// check if P* processes exists
+    	var url = oatHost + "/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+pid + "&sort=startTime&order=asc&size=500";
+       	var data = queryFlowableInstance(url);
+       	var ret = false;
+      	if (data["Result_API"] == "Success")
+       	{
+      		for (var j=0; j<data.total; j++)
+      		{
+      			var defName = "" + data.data[j].processDefinitionName;
+      			if (defName.startsWith("P_"))   //if any P_ text matched
+      			{
+      				ret = true;
+      				break;
+      			}
+      		}
+       	}
+      	return ret;
+    }  
+    function S_processTree(pid)        
+	{
+		// pid is Area/subphase process id  --  returns an array for hierarchyData" Node
+		var url = oatHost + "/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+pid + "&sort=startTime&order=asc&size=500";
+       	var data = queryFlowableInstance(url);
+       	var ret = []; // empty array initialize
+      	if (data["Result_API"] == "Success")
+       	{
+      		for (var j=0; j<data.total; j++) // looping through S* instances
+      		{
+      			var SJSON = {};
+      			var sname = ""+data.data[j].processDefinitionDescription;
+      			var pDefName =  ""+data.data[j].processDefinitionName; var dRson = ""+data.data[j].deleteReason;
+        		var beginTime = ""+data.data[j].startTime;  var endTime = ""+data.data[j].endTime;
+        		var rStatus = computeRunStatus(dRson,endTime,pDefName);
+        		SJSON={"name" : sname, "FlowableDefinitionName" : pDefName, 
+      					"FlowableInstanceId" : data.data[j].id, "processDefinitionId" : data.data[j].processDefinitionId, 
+      					"Run Status" : rStatus, "level" : "Scenario"};
+      			
+      			// check if P* processes inside or direct C*steps
+      			if (checkIfPExists(data.data[j].id))
+      			{
+      				S_anyCritError = false;A_anyCritError= false;
+      				SJSON["nodes"] = P_processTree(data.data[j].id,sname,"Process"); // call returns a JS array
+      				if (S_anyCritError) {
+      					SJSON["Run Status"] = "Stopped_with_error";
+      					A_anyCritError = true; // propagate upwards
+      				}
+      			}
+      			else {
+      				// direct C* steps array
+      				var CArray = []; // initialize empty array
+      				P_anyCritError = false;
+      				C_processTree(data.data[j].id,CArray); // call keeps appending elements in CArray
+      				SJSON["ExecuteSteps"] = CArray;
+      				if (P_anyCritError) {
+      					SJSON["Run Status"] = "Stopped_with_error";
+      					A_anyCritError = true;
+      				}
+      			}
+      			ret.push(SJSON);
+      		}
+       	}
+       	return ret;
+    }
+    function P_processTree(pid, sceName, proLevel)
+    {
+		// pid is Scenario process id or in a recursive cycle parent P* process
+		var url = oatHost + "/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+pid + "&sort=startTime&order=asc&size=500";
+       	var data = queryFlowableInstance(url);
+       	var ret = []; // empty the array initialize
+    	if (data["Result_API"] == "Success")
+       	{
+      		for (var j=0; j<data.total; j++)   // looping through P* instances
+      		{
+      			var PJSON = {};
+      			var pDefName =  ""+data.data[j].processDefinitionName; var dRson = ""+data.data[j].deleteReason;
+        		var beginTime = ""+data.data[j].startTime;  var endTime = ""+data.data[j].endTime;
+        		var rStatus = computeRunStatus(dRson,endTime,pDefName);
+        		var pname = ""+data.data[j].processDefinitionDescription;
+        		PJSON={"name" : pname, "FlowableDefinitionName" : pDefName, 
+      					"FlowableInstanceId" : data.data[j].id, "processDefinitionId" : data.data[j].processDefinitionId, 
+      					"Run Status" : rStatus, "level" : proLevel, "parent":sceName};
+      			
+      			// check if P* processes inside or direct C*steps
+      			if (checkIfPExists(data.data[j].id))     // futuristic case ???
+      			{
+      				PJSON["nodes"] = P_processTree(data.data[j].id,pname,"Sub-" + proLevel); // call returns a JS array -- recursive call
+      			}
+      			else {
+      				// direct C* steps
+      				var CArray = []; // empty initialize the array
+      				P_anyCritError = false; S_anyCritError = false;
+      				C_processTree(data.data[j].id, CArray); // call keeps appending elements in CArray
+      				PJSON["ExecuteSteps"] = CArray;
+      				if (P_anyCritError) {
+      					PJSON["Run Status"] = "Stopped_with_error";
+      					S_anyCritError = true; // propagate error upwards
+      				}
+      			}
+      			ret.push(PJSON);
+      		}
+       	}
+    	return ret;
+    }
+	function C_processTree(pid, CArray)
+    {
+		// pid is PROCESS id or SCENARIO id OR in a recursive cycle parent C* process
+		// keep appending CJSONs in input field -> CArray
+		var url = oatHost + "/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+pid + "&sort=startTime&order=asc&size=500";
+       	var data = queryFlowableInstance(url);
+    	if (data["Result_API"] == "Success")
+       	{
+    		if(data.total != 0){
+	        	for (var j =0; j<data.total; j++){
+	        		var pDefName =  ""+data.data[j].processDefinitionName; var dRson = ""+data.data[j].deleteReason;
+	        		var beginTime = ""+data.data[j].startTime;  var endTime = ""+data.data[j].endTime;
+	        		var rStatus = computeRunStatus(dRson,endTime,pDefName);
+	        		if (criticalRunStati.includes(rStatus))
+	        		{
+	        			P_anyCritError = true;
+	        			//alert("critical Error in C* step");
+	        		}
+	 				var CJSON={"Step": ""+data.data[j].processDefinitionDescription,"FlowableDefinitionName" : pDefName, 
+	 					"FlowableInstanceId" : data.data[j].id,"processDefinitionId" : data.data[j].processDefinitionId, 
+	 					"Run Status" : rStatus, "Last Executor" : data.data[j].startUserId, "Last Run" : data.data[j].startTime};
+	 				CArray.push(CJSON);
+	 				C_processTree(data.data[j].id,CArray);  // call recursively
+                }
+        	}
+       	}
+	}
+	function computeRunStatus(dReason,endTime,pDefName)
+	{
+		// calculate Run status of higher level or Config step
+		var runStatus = "Running_fine";
+		if (dReason == "null") { // no delete reason
+    		if (endTime == "null")
+    		{
+    			if (pDefName.includes("MANUAL_INTERVENTION"))
+    				runStatus = "Stopped_manual_intervention";
+    			else
+    				runStatus = "Running_fine";
+    		} 
+    		else {
+    			runStatus = "Completed";
+    		}
+		} else {
+			runStatus = "Cancelled";
+		}
+		return runStatus;
+	}
+	function queryFlowableInstance(url)
+	{
+		// A generic method to GET call for Flowable historic APIs
+		var self = this;
+		var ret = {};
+		var flow_username = "flowable";  var flow_password = "flowable";
+		jQuery.ajaxSetup({async: false}); // making synchronous
+		jQuery.ajax({
+	          	type:'GET',
+	          	url : url,
+	          	beforeSend: function (xhr) {
+	                  xhr.setRequestHeader ("Authorization", "Basic " + btoa(flow_username + ":" + flow_password));
+	                  },
+	              dataType : 'json',
+	              crossDomain: true,
+	              contentType: "application/json; charset=utf-8",
+	              success: function(data,status){
+	              	ret = data;
+	              	ret["Result_API"] = "Success";
+	              },
+	              error:function(jqXHR,status,errorThrown){
+	              	var jsonError = jqXHR.responseJSON;
+					ret = jsonError;
+					ret["Result_API"] = "Failure";
+					alert("Exception in Flowable history API query:" + status + "|Response:" + jqXHR.status + "|errorThrown:" + errorThrown);
+	              }
+	          });
+		jQuery.ajaxSetup({async: true});
+		return ret;
+	}
+	});
+	</script>
+</head>
+<body>
+<div id="jsonContent"></div>
+<!-- <button>Get Status JSON</button>  -->
+</body>
+</html>

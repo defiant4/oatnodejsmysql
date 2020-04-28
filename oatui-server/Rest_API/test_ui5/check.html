@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script>
+	$(document).ready(function(){
+		
+    var url1 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances";
+  	var url2 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances/6b92bf52-5311-11ea-a9fd-42010aeec524";
+   	// var url3 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances/061b5326-5304-11ea-9680-42010aeec524";
+    var username = "flowable"; var password = "flowable";
+    // var data1={"processDefinitionKey":"A_CHECK_USER_EXISTS"};
+    /*var data1={"processDefinitionKey":"A_CHECK_USER_EXISTS",
+                "returnVariables":true,
+                "variables": [
+    {
+        "name":"ECS_KEY",
+        "value":"005056A508801ED9B8EC4AEE3BD717AD",
+        "type":"string"
+      }
+   ]
+        };*/
+	
+	var data1 ={"processDefinitionKey":"W_API_TEST_INSTALLATION",
+			"startFormVariables":[	
+			{
+				"id": "ECS_KEY",
+				"name": "ECS_KEY",
+				"type":"string",
+				"value": "005056A508801ED9B8EC4AEE3BD717AD"
+			}
+		]};
+
+    var data2 = {"action":"suspend"};
+   	var id1=null; // global id carrier
+    /*AJAX CRUD Processing Begins*/
+    
+
+    /*CREATE POST*/
+    $("#create").click(function(){
+	   $.ajax({
+	   url: url1,
+	       crossDomain: true,
+	             beforeSend: function (xhr) {
+	        xhr.setRequestHeader ("Authorization", "Basic " + btoa(username + ":" + password));
+	        },
+	       type: 'POST',
+	       contentType: "application/json; charset=utf-8",
+	
+	       data: JSON.stringify(data1),
+	       success: function(data) {
+	       	console.log('succes: '+ JSON.stringify(data));
+			id1=data.id;
+	   	}
+		 });
+       });
+        /*DELETE*/
+	$("#delete").click(function(){
+	var url2 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances/" + id1;
+    $.ajax({
+            url: url2,
+            crossDomain: true,
+            beforeSend: function (xhr) {
+              	xhr.setRequestHeader ("Authorization", "Basic " + btoa(username + ":" + password));
+            },
+            type: 'DELETE',
+            contentType: "application/json; charset=utf-8",
+
+            // data: JSON.stringify(data1),
+            success: function(data){
+           	alert('success ');
+			id1=null;
+            }
+           });
+       });  
+        
+        /*PUT*/
+        $("#put").click(function(){
+        var url3 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances/" + id1;
+    $.ajax({
+            url: url3,
+            crossDomain: true,
+              beforeSend: function (xhr) {
+              xhr.setRequestHeader ("Authorization", "Basic " + btoa(username + ":" + password));
+              },
+            type: 'PUT',
+            contentType: "application/json; charset=utf-8",
+
+            data: JSON.stringify(data2),
+            success: function(data){
+		 	alert('succes: '+JSON.stringify(data));	
+            }
+           });
+       });
+
+	var url4 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/form/form-data";
+	var data4={
+	  "taskId" : "d3a2043a-67a0-11ea-8c7d-42010aeec524",
+	  "properties" : [
+		{
+		"id": "manual_action",
+		"name": "What you want to do next ????      0--> Completed Manual or Skipped   // .   1 -->  Root Cause Eliminated",
+		"type": "radio-buttons",
+		"value": "0",	
+		    }
+		  ]
+		};
+	/*Manual Intervention*/
+        $("#mi").click(function(){
+    	$.ajax({
+            url: url4,
+            crossDomain: true,
+              beforeSend: function (xhr) {
+              xhr.setRequestHeader ("Authorization", "Basic " + btoa(username + ":" + password));
+              },
+            type: 'POST',
+            contentType: "application/json; charset=utf-8",
+
+            data: JSON.stringify(data4),
+            success: function(data){
+            alert('success ');
+            }
+           });
+       });
+
+        
+    /*AJAX CRUD Processing Ends*/    
+        
+    });
+
+</script>
+</head>
+<body>
+
+<button id ="create">Create Process: HTTP POST request</button>
+    <br><br><br>
+<button id ="delete">Delete Process:  HTTP POST request</button>
+    <br><br><br>
+<button id="put">Put Process:  HTTP PUT request</button>
+     <br><br><br>
+<button id="mi">Manual Intervention Process:  HTTP POST request</button>
+
+
+
+</body>
+</html>
+

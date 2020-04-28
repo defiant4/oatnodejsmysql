@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script>
+    var url1 = "https://dlmoattst.wdf.sap.corp/flowable-task/process-api/runtime/process-instances?processDefinitionKey=W_API_TEST_INSTALLATION";
+    var username = "flowable";
+    var password = "flowable";
+    var statusJSON=[];
+    var WJSON={};
+    var AJSON=[];
+    var AJSON1=[];
+    var SJSON={};
+    var SJSON1=[];
+    var SJSON2=[];
+    var PJSON=[];
+    var PJSON1=[];
+    var CJSON=[];
+
+    $(document).ready(function(){
+    $("button").click(function(){
+    $.ajax({
+            url: url1,
+            crossDomain: true,
+              beforeSend: function (xhr) {
+              xhr.setRequestHeader ("Authorization", "Basic " + btoa(username + ":" + password));
+              },
+            type: 'GET',
+	contentType: "application/json; charset=utf-8",
+    		dataType: 'json',
+		success: function(data){
+//		alert("Installation");
+	WJSON["Installation"]={};
+	WJSON["Installation"]["Phase_Data"]={"name":"Installation", "FlowableDefinitionName" : data.data[0].processDefinitionName, "FlowableInstanceId" : data.data[0].id,"Run Status" : null};
+		//alert("Phase_Data");
+		//alert(data.total);
+		//alert(data.data[0].id);
+		//alert(data.data[0].processDefinitionName);
+		alert(JSON.stringify(WJSON));
+		A_createJSTree(data.data[0].id,data.total,data.data[0].processDefinitionName);
+          }
+		 });
+
+
+	function A_createJSTree(id,total,pdname)
+        {
+
+               var spid=id;
+                 var  count = total;
+                for (var i=0;i<count;i++)
+                {
+                ajaxcall(spid,onSuccess);
+                function onSuccess(data){
+                //alert("Sub_Phase_Data");
+                //alert(data.total);
+                for (var j =0; j<data.total; j++){
+                //alert(data.data[j].id);
+		AJSON=[{"name": "ASCS", "FlowableDefinitionName" : data.data[j].processDefinitionName, "FlowableInstanceId" : data.data[j].id,"Run Status" : null}];
+                 //alert(data.data[j].processDefinitionName);
+		AJSON1=AJSON1.concat(AJSON);
+		WJSON["Installation"]["Sub_Phase_Data"]=AJSON1;
+		alert(JSON.stringify(WJSON));
+                S_createJSTree(data.data[j].id,data.total,data.data[j].processDefinitionName);
+                }
+                }
+
+                }
+            }
+
+
+    function S_createJSTree(id,total,pdname)        
+	{
+	
+               var spid=id;
+		      var  count = total;
+		for (var i=0;i<count;i++)
+		{
+		ajaxcall(spid,onSuccess);
+                function onSuccess(data){
+		//alert(pdname);
+		//alert("hierarchyData");
+		//alert(pdname);
+		//alert(data.total);
+		//alert("nodes");
+            	for (var j =0; j<data.total; j++){
+		//alert(data.data[j].id);
+		SJSON={"FlowableDefinitionName" : pdname,"FlowableInstanceId" : spid, "Run Status" : null};
+		SJSON1=[{"name": "Configure Physical Server","FlowableDefinitionName": data.data[j].processDefinitionName,"FlowableInstanceId" : data.data[j].id, "Run Status" : null}];
+		SJSON2=SJSON2.concat(SJSON1);;
+		WJSON["Installation"]["ASCS"]=SJSON;
+		WJSON["Installation"]["ASCS"]["hierarchydata"]=SJSON2;
+		alert(JSON.stringify(WJSON));
+		P_createJSTree(data.data[j].id,data.total,data.data[j].processDefinitionName);
+		}	
+		}	
+           
+
+		}	
+                
+                
+            }
+    
+
+    function P_createJSTree(id,total,pdname)
+        {
+                 var  count = total;
+		          var spid=id;
+                for (var i=0;i<count;i++)
+               { 
+	ajaxcall(spid,onSuccess);
+                function onSuccess(data){
+                //alert(pdname);
+                //alert(data.total);
+		//alert("nodes");
+		//if(data.data[0].processDefinitionName!=){
+		//}
+                for (var j =0; j<data.total; j++){
+                //alert(data.data[j].id);
+                //alert(data.data[j].processDefinitionName);
+		PJSON=[{"name": "Create Non-Cloud Virtual Sever","FlowableDefinitionName" : data.data[j].processDefinitionName, "FlowableInstanceId" : data.data[j].id,"Run Status" : null}]; 
+		PJSON1=PJSON1.concat(PJSON);
+		WJSON["Installation"]["ASCS"]["hierarchydata"][--i]["nodes"]=PJSON1;
+		alert(JSON.stringify(WJSON));
+		C_createJSTree(count,data.data[j].id,data.total,data.data[j].processDefinitionName);
+                }
+                }
+
+                }
+
+
+            }
+
+
+	function C_createJSTree(s_count,id,total,pdname)
+        {
+		var count1=s_count;alert(count1);
+                 var count = total;
+		var spid=id;
+               
+                 
+                for (var i=0;i<count;i++)
+                { var x=i;
+                ajaxcall(spid,onSuccess);
+                function onSuccess(data){
+                //alert(pdname);
+		if(data.total!=0){
+               // alert(data.total);
+                for (var j =0; j<data.total; j++){
+                //alert(data.data[j].id);
+                 //alert(data.data[j].processDefinitionName);
+		CJSON=[{"name": "Reserve IP","FlowableDefinitionName" : data.data[j].processDefinitionName, "FlowableInstanceId" : data.data[j].id,"Run Status" : null}];
+		statusJSON=statusJSON.concat(CJSON);alert(count1);
+		WJSON["Installation"]["ASCS"]["hierarchydata"][0]["nodes"][x]["ExecuteSteps"]=statusJSON;
+                C_createJSTree(count1,data.data[j].id,data.total,data.data[j].processDefinitionName);
+                }
+                }
+		}
+		alert(JSON.stringify(WJSON));
+		--count;}
+		}
+        
+        
+
+        function ajaxcall(id,successCallback){
+            var username = "flowable";
+            var password = "flowable";
+            var url = "https://dlmoattst.wdf.sap.corp/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+id;
+            $.ajax({
+                     url: url,
+            crossDomain: true,
+              beforeSend: function (xhr) {
+              xhr.setRequestHeader ("Authorization", "Basic " + btoa(username + ":" + password));
+              },
+            type: 'GET',
+            contentType: "application/json; charset=utf-8",
+                dataType: 'json',
+                    success: successCallback,
+                    error: function(xhr, textStatus, errorThrown) {
+                        console.log('error');
+                    }
+                });
+
+        }
+
+
+            });
+    });
+
+</script>
+</head>
+<body>
+
+<button>JSON tree: API </button>
+
+</body>
+</html>
+

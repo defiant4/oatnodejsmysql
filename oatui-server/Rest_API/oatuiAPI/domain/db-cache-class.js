@@ -1,0 +1,28 @@
+// node cache
+const NodeCache = require("node-cache");
+//const dbCache1 = new NodeCache({stdTTL: 0, checkperiod: 0 });
+
+class DataCache {
+  constructor() {
+	  this.dbCache1 = new NodeCache({ stdTTL: 0, checkperiod: 0});
+  }
+  getCache(key) {
+	  return this.dbCache1.get(key);
+  }
+  setCache(key,dataJson) {
+	  this.dbCache1.set(key, dataJson);
+  }
+  delCache(keys) {
+	  this.dbCache1.del(keys);
+  }
+  dumpCache() {
+	  return this.dbCache1.keys();
+  }
+  flushCache() {
+	  return this.dbCache1.flushAll();
+  }
+}
+const DBCache = new DataCache();
+console.log("DB cache initialized");
+
+module.exports = DBCache;
