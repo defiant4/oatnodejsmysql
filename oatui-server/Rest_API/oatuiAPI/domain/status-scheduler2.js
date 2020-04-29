@@ -32,10 +32,10 @@ console.log("Starting status generator");
 	//console.log("Exiting status-scheduler parent process");
 	//process.exit(); // Finally exit of parent process
 //}
-
-
+var task;var taskflag=0;
+routerScheduler.get("/start/scheduler/", async (req,res,next) =>{
 // cron task and status generator/child fork parent function
-var task = cron.schedule('*/5 * * * * *', async () =>  {
+task = cron.schedule('*/5 * * * * *', async () =>  {
 
 let sqlQuery1 = `SELECT * FROM OATUI.OAT_UI_BUILD_STATUS`;
 	db.query(sqlQuery1, (err, data)=> {
@@ -67,6 +67,7 @@ let sqlQuery1 = `SELECT * FROM OATUI.OAT_UI_BUILD_STATUS`;
 								messageObj = {"mpid":data1[k]["mpid"], "build_id":data1[k]["build_id"], 
 									"cache": cacheArray, "ifUpdate":"true"};
 							childProcess = child_process.fork("status-calculator-child.js", {cwd:"/opt/nodejs_oatui/oatuiAPI/domain/"});
+							//console.log("Forked ID:"+ childProcess.pid);
 							childProcess.send(messageObj);
 							forkedInstancesArr.push(childProcess);
 						}
@@ -98,10 +99,10 @@ let sqlQuery1 = `SELECT * FROM OATUI.OAT_UI_BUILD_STATUS`;
 							//var cacheKeys = await dataCache.keys();
 							//console.log('DB Cache as in parent:' + cacheArray);
 							//console.log("Total Array:"+ JSON.stringify(totalArr));
-							   console.log("DB cache updated");
+							console.log("DB Cache Updated");
 							 //for (var i=0;i<totalArr.length;i++){		-----> for-loop required if we list of mpid keys instead of full array json
-                                   dbCache.setCache("mpid",totalArr);
-                                   //console.log("MPID Check:"+JSON.stringify(totalArr[i][0].mpid));}
+                                                             dbCache.setCache("mpid"	,totalArr);
+                                                             //console.log("MPID Check:"+JSON.stringify(totalArr[i][0].mpid));}
 							//process.exit(); //dont exit here
 						});
 					}
@@ -111,28 +112,33 @@ let sqlQuery1 = `SELECT * FROM OATUI.OAT_UI_BUILD_STATUS`;
 	});
 
 });
-
-//start cron task 
-routerScheduler.get("/start/scheduler/", async (req,res,next) =>{
-
-	task.start();
-	res.status(200).json({Result:"Success"});
-
+task.start();
+taskflag=1;
+res.status(200).json({Result:"Success"});
 });
-
 //stop cron task
 routerScheduler.get("/stop/scheduler", async (req,res,next) =>{
 
+	if(taskflag==0){res.status(200).json({Result:"Failure"});return;}
 	task.stop();
 	res.status(200).json({Result:"Success"});
 
 });
 
+//start cron task
+/*routerScheduler.get("/start/scheduler/", async (req,res,next) =>{
+
+        task.start();
+        res.status(200).json({Result:"Success"});
+
+});*/
+
 // storing whole array cache as per key "mpid"
 routerScheduler.get("/getCache", (req,res,next) =>{
 	let statuscache=dbCache.getCache("mpid");
 	res.status(200).json({Result:"Success",
-			      		  Dataset: statuscache});
+			      Dataset: statuscache});
+	
 	//console.log("CacheArray:"+ JSON.stringify(statuscache));
 
 });

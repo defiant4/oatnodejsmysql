@@ -3,7 +3,6 @@ var BuildStatusJson =require("../domain/statuscalculator");
 var axios = require('axios');
 var db = require("../db/database");
 const routerFlowable = express.Router();
-const dbCache = require("../domain/db-cache-class"); //make a nodejs cache
 
 //get Build Status JSON by master pid
 routerFlowable.get("/get/buildStatusJson/:mpid", async (req, res, next) => {

@@ -4,6 +4,7 @@ var cors =  require("cors");
  
 var dbManager = require("./api/db-interaction");
 var flowManager = require("./api/flowable-interaction");
+var statusManager = require("./domain/status-scheduler2");
 //var builds = require("./api/builds");
  
 const app = express();
@@ -25,6 +26,7 @@ app.use(function (req, res, next) {
 //app.use("/api",builds);
 app.use("/api",dbManager);
 app.use("/api",flowManager);
+app.use("/api",statusManager);
  
 //if we are here then the specified request is not found
 app.use((req,res,next)=> {

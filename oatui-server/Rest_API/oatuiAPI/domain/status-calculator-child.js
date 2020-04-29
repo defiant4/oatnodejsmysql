@@ -3,6 +3,7 @@ var db = require("../db/database");
 var BuildStatusJson = require("../domain/statuscalculator");
 process.on('message', async (messageObj) => {
 
+	try{
 	console.log('Message from parent:' + JSON.stringify(messageObj));
 	//process.send('Greetings');
 	// process JSON from mpids and store in dbCache
@@ -49,7 +50,11 @@ process.on('message', async (messageObj) => {
 			process.exit();
 		});
 	}
-	
+	}
+	catch(err){
+	console.log("ERROR:"+err.message);
+	process.exit();
+}
  
 });
 
