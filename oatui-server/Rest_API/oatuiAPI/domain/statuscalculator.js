@@ -1,3 +1,4 @@
+const config = require('config');
 var axios = require('axios');
 /*Class to access status calculator hierarchy and related data*/
 class BuildStatusJson
@@ -6,22 +7,25 @@ class BuildStatusJson
 	{
 		this.webParamWInstanceId=webParamWInstanceId;
 		this.WJSON={};
-		this.oatHost = "<server host>";  // for test server
+		this.oatHost = config.get('deploy.host');
 		this.criticalRunStati = ["Stopped_with_error","Stopped_manual_intervention"];
 		this.P_anyCritError = false;
 		this.S_anyCritError = false;
 		this.A_anyCritError=false;
+		this.flowCallCounter = 0;
 	}
 	/*calls the first M level/W-level,main function invoked from the router api and returns the final json*/
-	 outputjson()
+	outputjson()
 	{
 		return this.M_processTree(this.webParamWInstanceId); // for input M* parent id
 	}
-	 async M_processTree(mpid)  // would call internally for Installation, Configuration & Quality
+	async M_processTree(mpid)  // would call internally for Installation, Configuration & Quality
 	{	
 		// pid is the super parent ID -- M level ID
+
 		var url = this.oatHost + "/flowable-rest/service/history/historic-process-instances?processInstanceId=" + mpid;
 		var data=await this.queryFlowableInstance(url);
+		++this.flowCallCounter;
 		if (data["Result_API"] == "Success")
 		{		
 			if(data.total == 1){	    //if no data is available for the respective wpid 	
@@ -34,10 +38,11 @@ class BuildStatusJson
 				this.WJSON["Master_Info"] = {"name":phaseName, "FlowableDefinitionName" : pDefName, "mpid":data.data[0].id,
 						"FlowableInstanceId" : data.data[0].id,"processDefinitionId" : data.data[0].processDefinitionId, 
 						"Start Time": beginTime,"End Time": endTime, "Run Status" : rStatus,"BusinessKey": ""+data.data[0].businessKey, "durationInMillis": ""+data.data[0].durationInMillis};
-				
+
 				// check for W* process childs
 				var url2 = this.oatHost + "/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+mpid + "&sort=startTime&order=asc&size=500";
 				var data2 = await this.queryFlowableInstance(url2);
+				++this.flowCallCounter;
 				if (data2["Result_API"] == "Success" && data2.total > 0)
 				{
 					this.WJSON["Phases_Array"] = [];
@@ -48,6 +53,7 @@ class BuildStatusJson
 					}
 					// when all W* are computed fine
 					this.WJSON["Master_Info"]["Timestamp_JSON"] = await this.getFormattedTimestamp(); // timestamp value
+					this.WJSON["Master_Info"]["FlowableCallsCount"] = this.flowCallCounter; // total Flowable calls made
 					return this.WJSON;
 				}
 			}
@@ -69,6 +75,7 @@ class BuildStatusJson
 		// pid is the super parent ID -- W* instance ID
 		var url = this.oatHost + "/flowable-rest/service/history/historic-process-instances?processInstanceId=" + pid;
 		var data=await this.queryFlowableInstance(url);
+		++this.flowCallCounter;
 		if (data["Result_API"] == "Success")
 		{		
 			if(data.total == 1){	    //if no data is available for the respective wpid 	
@@ -94,6 +101,7 @@ class BuildStatusJson
 		// think about startTime & endTime and mark as 'Completed' if applicable -- check for 'deleteReason'
 		var url = this.oatHost + "/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+pid + "&sort=startTime&order=asc&size=500";
 		var data = await this.queryFlowableInstance(url);
+		++this.flowCallCounter;
 		if (data["Result_API"] == "Success")
 		{
 			var AJSON_Arr = [];
@@ -111,7 +119,7 @@ class BuildStatusJson
 						"Start Time": beginTime,"End Time": endTime, "Run Status" : rStatus,"BusinessKey": ""+data.data[j].businessKey, "durationInMillis": ""+data.data[j].durationInMillis};
 				this.A_anyCritError = false;
 				AJSON["hierarchyData"] = await this.S_processTree(data.data[j].id); // call returns an array
-				
+
 				if (this.A_anyCritError) {
 					AJSON["Run Status"] = "Running_with_error";
 					AJSON_Arr.push({"name": aName, "FlowableDefinitionName" : "" + data.data[j].processDefinitionName,
@@ -124,13 +132,14 @@ class BuildStatusJson
 				this.WJSON[phaseName][aName] = AJSON;
 			}
 		}
-		
+
 	}
 	async checkIfPExists(pid)
 	{
 		// check if P* processes exists
 		var url = this.oatHost + "/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+pid + "&sort=startTime&order=asc&size=500";
 		var data = await this.queryFlowableInstance(url);
+		++this.flowCallCounter;
 		var ret = false;
 		if (data["Result_API"] == "Success")
 		{
@@ -151,6 +160,7 @@ class BuildStatusJson
 		// pid is Area/subphase process id  --  returns an array for hierarchyData" Node
 		var url = this.oatHost + "/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+pid + "&sort=startTime&order=asc&size=500";
 		var data = await this.queryFlowableInstance(url);
+		++this.flowCallCounter;
 		var ret = []; // empty array initialize
 		if (data["Result_API"] == "Success")
 		{
@@ -196,6 +206,7 @@ class BuildStatusJson
 		// pid is Scenario process id or in a recursive cycle parent P* process
 		var url = this.oatHost + "/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+pid + "&sort=startTime&order=asc&size=500";
 		var data = await this.queryFlowableInstance(url);
+		++this.flowCallCounter;
 		var ret = []; // empty the array initialize
 		if (data["Result_API"] == "Success")
 		{
@@ -239,6 +250,7 @@ class BuildStatusJson
 		// keep appending CJSONs in input field -> CArray
 		var url = this.oatHost + "/flowable-rest/service/history/historic-process-instances?superProcessInstanceId="+pid + "&sort=startTime&order=asc&size=500";
 		var data = await this.queryFlowableInstance(url);
+		++this.flowCallCounter;
 		if (data["Result_API"] == "Success")
 		{
 			if(data.total != 0){
@@ -285,7 +297,7 @@ class BuildStatusJson
 	{
 		// A generic method to GET call for Flowable historic APIs
 		var ret = {};
-		var flow_username = "<username>";  var flow_password = "<password>";
+		var flow_username = "flowable";  var flow_password = "flowable";
 		return axios.get(url,{ auth: {username: flow_username , password: flow_password}
 		})
 		.then(function(response){
@@ -316,19 +328,19 @@ class BuildStatusJson
 	async getMySQLTimestamp()
 	{
 		// store in MySQL like "YYYY-MM-DD hh:mm:ss" but in German timezone
-	    var now = new Date();
-	    //  convert to msec -- add local time zone offset  -- get UTC time in msec
-	    var utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-	    // create new Date object for Germany using supplied European offset
-	    var offset = 2;
-	    var d = new Date(utc + (3600000*offset));
-	    var ret = d.getFullYear() +"-"+('0' + (d.getMonth() + 1)).slice(-2)+"-"+('0' + d.getDate()).slice(-2) +" " + ('0' + d.getHours()).slice(-2) + ":" + ('0' + d.getMinutes()).slice(-2) + ":" + ('0' + d.getSeconds()).slice(-2);
-	    return ret;
+		var now = new Date();
+		//  convert to msec -- add local time zone offset  -- get UTC time in msec
+		var utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+		// create new Date object for Germany using supplied European offset
+		var offset = 2;
+		var d = new Date(utc + (3600000*offset));
+		var ret = d.getFullYear() +"-"+('0' + (d.getMonth() + 1)).slice(-2)+"-"+('0' + d.getDate()).slice(-2) +" " + ('0' + d.getHours()).slice(-2) + ":" + ('0' + d.getMinutes()).slice(-2) + ":" + ('0' + d.getSeconds()).slice(-2);
+		return ret;
 	}
 	async getFormattedTimestamp(){
-	    var d = new Date();
-	    var ret1 = d.getFullYear() +"-"+('0' + (d.getMonth() + 1)).slice(-2)+"-"+('0' + d.getDate()).slice(-2) +" " + ('0' + d.getHours()).slice(-2) + ":" + ('0' + d.getMinutes()).slice(-2) + ":" + ('0' + d.getSeconds()).slice(-2);
-	    return ret1;
+		var d = new Date();
+		var ret1 = d.getFullYear() +"-"+('0' + (d.getMonth() + 1)).slice(-2)+"-"+('0' + d.getDate()).slice(-2) +" " + ('0' + d.getHours()).slice(-2) + ":" + ('0' + d.getMinutes()).slice(-2) + ":" + ('0' + d.getSeconds()).slice(-2);
+		return ret1;
 	}
 };
 

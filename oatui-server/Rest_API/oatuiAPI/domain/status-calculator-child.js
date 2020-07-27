@@ -1,60 +1,56 @@
-//var dbCache = require("../domain/db-cache-class"); //make a nodejs cache
 var db = require("../db/database");
-var BuildStatusJson = require("../domain/statuscalculator");
+//var BuildStatusJson = require("../domain/statuscalculator");
+var BuildStatusJson2 = require("../domain/statuscalculator2");
 process.on('message', async (messageObj) => {
-
 	try{
-	console.log('Message from parent:' + JSON.stringify(messageObj));
-	//process.send('Greetings');
-	// process JSON from mpids and store in dbCache
-	var mid = new BuildStatusJson(messageObj["mpid"]);
-	var computedJSON = await mid.outputjson();
-	var cacheArr = messageObj["cache"];
-	cacheArr.push({mpid : messageObj["mpid"], JSONtree : computedJSON});
-	process.send(cacheArr);
-	//await dbCache.set(messageObj["mpid"],computedJSON);
-	//console.log("DB cache updated");
-	var finalJSON = JSON.stringify(computedJSON);
+		console.log('Message from parent:' + JSON.stringify(messageObj));
+		// process JSON from mpids and store in dbCache
+		var computedJSON = {};
+		var mid = new BuildStatusJson2(messageObj["mpid"]);
+		computedJSON = await mid.outputjson();
+		var cacheObj = {"mpid" : messageObj["mpid"], "build_id": messageObj["build_id"], "buildJSON" : computedJSON};
+		process.send(cacheObj);
+		
+		let doDBUpdate = false;  // currently disable it
+		// update in status Table -- to be discontinued -- needs to be handled by 
+		if (doDBUpdate)
+		{
+			var finalJSON = JSON.stringify(computedJSON);
+			var tmStamp = "" + computedJSON["Master_Info"]["Timestamp_JSON"];
+			var buildId = messageObj["build_id"];
+			var update = messageObj["ifUpdate"] == "false" ? false : true ;
 	
-	console.log("Timestamp:" + computedJSON["Master_Info"]["Timestamp_JSON"]);
-	// update in status Table
-	var tmStamp = "" + computedJSON["Master_Info"]["Timestamp_JSON"];
-	var buildId = messageObj["build_id"];
-	var update = messageObj["ifUpdate"] == "false" ? false : true ;
-	
-	let sqlStatus = `SELECT * FROM OATUI.OAT_UI_BUILD_STATUS`;
-	if (update) {
-		let sqlUpdate = `UPDATE OATUI.OAT_UI_BUILD_STATUS SET status_JSON='${finalJSON}',Timestamp_CET='${tmStamp}' WHERE build_id='${buildId}'`;
-		db.query(sqlUpdate, (err, data)=> {
-			if(!err){
-				console.log("Update in statusTable successfull");
+			let sqlStatus = `SELECT * FROM <build status table>`;
+			if (update) {
+				let sqlUpdate = `UPDATE <build status table> SET status_JSON='${finalJSON}',Timestamp_CET='${tmStamp}' WHERE build_id='${buildId}'`;
+				db.query(sqlUpdate, (err, data)=> {
+					if(!err){
+						console.log("Update in statusTable successfull");
+					}
+					else
+						console.log("Update error_message:"+ err.sqlMessage);
+					
+					console.log("Exit child after update");
+				});
 			}
-			else {
-				console.log("Update error_message:"+ err.sqlMessage);
+			else 
+			{
+				let sqlInsert = `INSERT INTO <build status table>(build_id,status_JSON,Timestamp_CET) VALUES ('${buildId}','${finalJSON}','${tmStamp}')`;
+				db.query(sqlInsert, (err, data)=> {
+					if(!err){
+						console.log("Insert in statusTable successfull");
+					}
+					else
+						console.log("Insert error_message:"+ err.sqlMessage);
+					
+					console.log("Exit child after insert");
+				});
 			}
-			console.log("Exit child after update");
-			process.exit();
-		});
-	}
-	else 
-	{
-		let sqlInsert = `INSERT INTO OATUI.OAT_UI_BUILD_STATUS(build_id,status_JSON,Timestamp_CET) VALUES ('${buildId}','${finalJSON}','${tmStamp}')`;
-		db.query(sqlInsert, (err, data)=> {
-			if(!err){
-				console.log("Insert in statusTable successfull");
-			}
-			else {
-				console.log("Insert error_message:"+ err.sqlMessage);
-			}
-			console.log("Exit child after insert");
-			process.exit();
-		});
-	}
+		}
+		process.exit();  // exit finally
 	}
 	catch(err){
-	console.log("ERROR:"+err.message);
-	process.exit();
-}
- 
+		console.log("Exception in status-calculator-child:"+err.message);
+		process.exit();
+	}
 });
-

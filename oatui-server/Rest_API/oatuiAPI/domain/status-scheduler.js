@@ -15,7 +15,7 @@ async function runScheduler() {
 
 async function periodicStatusGenerator() {
 	// with db.query find out all master pids like below
-	let sqlQuery1 = `SELECT * FROM OATUI.OAT_UI_BUILD_STATUS`;
+	let sqlQuery1 = `SELECT * FROM <build status table>`;
 	db.query(sqlQuery1, (err, data)=> {
 		if(!err){
 			var storedBuildIdsInStatusTable = [];
@@ -26,7 +26,7 @@ async function periodicStatusGenerator() {
 			console.log("Stored builds in Status Table:" + JSON.stringify(storedBuildIdsInStatusTable));
 
 			// Now check for running builds
-			let sqlMaster = `SELECT * FROM OATUI.OAT_UI_BUILD_MASTER`;
+			let sqlMaster = `SELECT * FROM <build master tabke>`;
 			var cacheArray = [];
 			var forkedInstancesArr = [];
 			var totalArr = [];

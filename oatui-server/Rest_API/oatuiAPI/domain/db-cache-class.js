@@ -1,7 +1,7 @@
 // node cache
 const NodeCache = require("node-cache");
 //const dbCache1 = new NodeCache({stdTTL: 0, checkperiod: 0 });
-
+// A single in-memory cache pattern for storing specific data in memory
 class DataCache {
   constructor() {
 	  this.dbCache1 = new NodeCache({ stdTTL: 0, checkperiod: 0});

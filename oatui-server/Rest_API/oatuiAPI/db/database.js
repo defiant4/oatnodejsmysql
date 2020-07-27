@@ -1,11 +1,17 @@
+const config = require('config');
 var mysql = require("mysql");
- 
+let connectionLimit = config.get('db.connectionLimit'); 
+let host = config.get('db.host');
+let user = config.get('db.user');
+let password = config.get('db.password');
+let database = config.get('db.database');
+
 const pool = mysql.createPool({
-            connectionLimit : 100,
-            host     : 'localhost',
-            user     : 'oatui',
-            password : 'Nep1GToW',
-            database : 'OATUI',
+            connectionLimit : connectionLimit,
+            host     : host,
+            user     : user,
+            password : password,
+            database : database,
             debug    : false 
             });                    
  
